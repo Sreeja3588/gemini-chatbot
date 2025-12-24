@@ -183,19 +183,26 @@ body {
   height: 100%;
   width: 100%;
   position: relative;
+  overflow-y: auto;
+  /* Scrollbar on the main container now */
+  scroll-behavior: smooth;
 }
 
 .messages-list {
   flex: 1;
-  overflow-y: auto;
-  padding: 2rem 1rem;
+  padding: 2rem 1rem 0 1rem;
+  /* Removed bottom padding here */
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  scroll-behavior: smooth;
-  max-width: 900px;
-  margin: 0 auto;
   width: 100%;
+}
+
+.messages-list>* {
+  max-width: 900px;
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .message-wrapper {
@@ -295,25 +302,124 @@ body {
 
 .input-container {
   padding: 1.5rem;
-  background: linear-gradient(transparent, var(--bg-color) 20%);
+  background: linear-gradient(transparent, var(--bg-color) 40%, var(--bg-color));
   max-width: 900px;
   margin: 0 auto;
   width: 100%;
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
 }
 
-.input-wrapper {
+.input-wrapper.copilot-style {
   background-color: var(--panel-color);
   border: 1px solid var(--border-color);
-  border-radius: 0.75rem;
+  border-radius: 1.5rem;
   display: flex;
-  align-items: flex-end;
-  padding: 0.5rem 0.75rem;
+  flex-direction: column;
+  padding: 0.75rem 1rem;
   gap: 0.5rem;
-  transition: border-color 0.2s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
 }
 
-.input-wrapper:focus-within {
+.input-wrapper.copilot-style:focus-within {
   border-color: var(--accent-color);
+  box-shadow: 0 4px 32px rgba(59, 130, 246, 0.15);
+}
+
+.input-top {
+  width: 100%;
+}
+
+.input-top textarea {
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  font-size: 1rem;
+  padding: 0.25rem 0.5rem;
+  resize: none;
+  outline: none;
+}
+
+.input-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 0.25rem;
+}
+
+.input-actions-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.action-icon-btn {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.action-icon-btn:hover {
+  background-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+.smart-dropdown {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.25rem 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 1rem;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.smart-dropdown:hover {
+  background-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+.input-actions-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.send-button-alt {
+  background-color: var(--accent-color);
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  padding: 0.4rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.send-button-alt:hover:not(:disabled) {
+  background-color: var(--accent-hover);
+  transform: scale(1.05);
+}
+
+.send-button-alt:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
 }
 
 textarea {
@@ -349,6 +455,50 @@ textarea {
 .send-button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.voice-button {
+  background-color: transparent;
+  color: var(--text-secondary);
+  border: none;
+  border-radius: 0.5rem;
+  padding: 0.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.voice-button:hover:not(:disabled) {
+  color: var(--text-primary);
+  background-color: var(--panel-color);
+}
+
+.voice-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.voice-button.listening {
+  color: #ef4444;
+  animation: pulse 1.5s infinite;
+}
+
+.voice-button.active {
+  color: var(--accent-color);
+}
+
+@keyframes pulse {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
 }
 
 /* Markdown Styles */
