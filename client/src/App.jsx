@@ -87,12 +87,15 @@ const ChatInterface = () => {
     localStorage.setItem('autoSpeak', JSON.stringify(autoSpeak));
   }, [autoSpeak]);
 
+  const lastSpokenRef = useRef(null);
+
   // Auto-speak AI responses
   useEffect(() => {
     if (autoSpeak && messages.length > 0) {
       const lastMessage = messages[messages.length - 1];
-      if (lastMessage.role === 'model' && !isLoading) {
+      if (lastMessage.role === 'model' && !isLoading && lastSpokenRef.current !== lastMessage.content) {
         speakText(lastMessage.content);
+        lastSpokenRef.current = lastMessage.content;
       }
     }
   }, [messages, autoSpeak, isLoading]);
@@ -112,12 +115,61 @@ const ChatInterface = () => {
     }
   };
 
-  const speakText = (text) => {
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
+  // Track current utterance to prevent garbage collection and allow cancellation
+  const utterancesRef = useRef([]);
+  const voicesLoadedRef = useRef(false);
 
-      // Get available voices and prefer female voices for a cuter sound
+  useEffect(() => {
+    const handleVoicesChanged = () => {
+      if (window.speechSynthesis.getVoices().length > 0) {
+        voicesLoadedRef.current = true;
+      }
+    };
+    window.speechSynthesis.addEventListener('voiceschanged', handleVoicesChanged);
+    handleVoicesChanged();
+    return () => window.speechSynthesis.removeEventListener('voiceschanged', handleVoicesChanged);
+  }, []);
+
+  const speakText = (text) => {
+    if (!('speechSynthesis' in window)) return;
+
+    window.speechSynthesis.cancel();
+    utterancesRef.current = [];
+
+    // Filter out markdown characters
+    const cleanText = text
+      .replace(/[\*\_\#\-\`]/g, '')
+      .replace(/\[(.*?)\]\(.*?\)/g, '$1')
+      .replace(/\n+/g, ' ')
+      .trim();
+
+    if (!cleanText) return;
+
+    // Word-based chunking for maximum reliability (under 200 chars)
+    const words = cleanText.split(' ');
+    const chunks = [];
+    let currentChunk = '';
+
+    words.forEach(word => {
+      if ((currentChunk + word).length < 180) {
+        currentChunk += (currentChunk ? ' ' : '') + word;
+      } else {
+        chunks.push(currentChunk);
+        currentChunk = word;
+      }
+    });
+    if (currentChunk) chunks.push(currentChunk);
+
+    let chunkIndex = 0;
+
+    const speakNextChunk = () => {
+      if (chunkIndex >= chunks.length) {
+        setIsSpeaking(false);
+        return;
+      }
+
+      const utterance = new SpeechSynthesisUtterance(chunks[chunkIndex]);
+
       const voices = window.speechSynthesis.getVoices();
       const cuteVoice = voices.find(voice =>
         voice.name.includes('Google UK English Female') ||
@@ -125,24 +177,38 @@ const ChatInterface = () => {
         voice.name.includes('Google US English Female') ||
         voice.name.includes('Samantha') ||
         voice.name.toLowerCase().includes('female')
-      ) || voices.find(voice => voice.lang.startsWith('en'));
+      ) || voices.find(voice => voice.lang.startsWith('en')) || voices[0];
 
       if (cuteVoice) utterance.voice = cuteVoice;
-
-      utterance.rate = 1.1;    // Slightly faster for energetic cute sound
-      utterance.pitch = 1.3;   // Higher pitch for younger/cuter voice
+      utterance.rate = 1.1;
+      utterance.pitch = 1.3;
       utterance.volume = 1;
 
       utterance.onstart = () => setIsSpeaking(true);
-      utterance.onend = () => setIsSpeaking(false);
-      utterance.onerror = () => setIsSpeaking(false);
+      utterance.onend = () => {
+        // Small delay ensures browser is ready for next chunk
+        setTimeout(() => {
+          chunkIndex++;
+          speakNextChunk();
+        }, 60);
+      };
+      utterance.onerror = (e) => {
+        if (e.error !== 'interrupted') {
+          console.error('TTS Error:', e);
+          setIsSpeaking(false);
+        }
+      };
 
+      utterancesRef.current.push(utterance);
       window.speechSynthesis.speak(utterance);
-    }
+    };
+
+    speakNextChunk();
   };
 
   const stopSpeaking = () => {
     window.speechSynthesis.cancel();
+    utterancesRef.current = [];
     setIsSpeaking(false);
   };
 
@@ -188,7 +254,7 @@ const ChatInterface = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://localhost:5000/api/chat', {
+      const response = await fetch('http://127.0.0.1:5000/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -343,13 +409,7 @@ const ChatInterface = () => {
               </div>
               <div className="input-bottom">
                 <div className="input-actions-left">
-                  <button className="action-icon-btn" title="Add file or image">
-                    <Plus size={18} />
-                  </button>
-                  <div className="smart-dropdown">
-                    <span>Smart</span>
-                    <ChevronDown size={14} />
-                  </div>
+                  {/* Plus icon and Smart button removed per user request */}
                 </div>
 
                 <div className="input-actions-right">
