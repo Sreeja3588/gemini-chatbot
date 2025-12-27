@@ -1,0 +1,20 @@
+{
+    "name": "gemini-chatbot-unified",
+    "version": "1.0.0",
+    "description": "Unified Gemini Chatbot for deployment",
+    "main": "server/index.js",
+    "scripts": {
+        "install-client": "cd client && npm install",
+        "install-server": "cd server && npm install",
+        "install-all": "npm run install-client && npm run install-server",
+        "build": "cd client && npm run build",
+        "start": "cd server && node index.js",
+        "dev": "concurrently \"npm run dev-server\" \"npm run dev-client\"",
+        "dev-server": "cd server && nodemon index.js",
+        "dev-client": "cd client && npm run dev"
+    },
+    "devDependencies": {
+        "concurrently": "^8.2.2",
+        "nodemon": "^3.1.1"
+    }
+}
